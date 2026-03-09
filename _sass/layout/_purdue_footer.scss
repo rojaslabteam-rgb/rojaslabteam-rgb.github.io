@@ -1,0 +1,64 @@
+/* ==========================================================================
+   PURDUE 2015 TEMPLATE - FOOTER STYLES
+   Reference: purdueTemplates-2015-master
+   ========================================================================== */
+
+.purdue-footer__contact {
+  background-color: #000;
+  color: #ccc;
+  text-align: center;
+  font-size: 0.875rem;
+  padding: 2rem 1rem 1.5rem;
+  line-height: 1.5;
+
+  &--inner {
+    max-width: 1140px;
+    margin: 0 auto;
+
+    p {
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
+.page__footer {
+  background-color: #000 !important;
+  color: #ccc;
+  border-top: none;
+
+  footer {
+    max-width: 1140px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2rem 1rem 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  a {
+    color: #ccc;
+    text-decoration: underline;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+
+  .page__footer-copyright {
+    color: #ccc;
+  }
+
+  .page__footer-follow {
+    margin-bottom: 1rem;
+
+    a {
+      color: #999;
+      margin: 0 0.5rem;
+
+      &:hover {
+        color: #fff;
+      }
+    }
+  }
+}

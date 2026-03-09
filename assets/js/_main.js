@@ -88,7 +88,7 @@ if (plotlyElements.length > 0) {
 $(document).ready(function () {
   // SCSS SETTINGS - These should be the same as the settings in the relevant files 
   const scssLarge = 925;          // pixels, from /_sass/_themes.scss
-  const scssMastheadHeight = 70;  // pixels, from the current theme (e.g., /_sass/theme/_default.scss)
+  const scssMastheadHeight = 140; // pixels, Purdue header (signature + main nav)
 
   // If the user hasn't chosen a theme, follow the OS preference
   setTheme();

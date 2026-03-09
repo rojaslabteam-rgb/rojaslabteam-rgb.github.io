@@ -1,0 +1,20 @@
+# Guide Table of Contents - each item links to a full page
+items:
+  - title: "Key Files & Directories"
+    url: /guide/files/
+    description: "Where to find configuration files, pages, collections, and static assets in the site structure."
+  - title: "Tips and Hints"
+    url: /guide/tips/
+    description: "Build status, file naming, emoji support, and useful resources for customizing the template."
+  - title: "MathJax"
+    url: /guide/mathjax/
+    description: "How to render mathematical equations using LaTeX syntax in your pages."
+  - title: "Mermaid Diagrams"
+    url: /guide/mermaid/
+    description: "Create flowcharts, sequence diagrams, and other diagrams with Mermaid syntax."
+  - title: "Plotly Charts"
+    url: /guide/plotly/
+    description: "Add interactive charts and visualizations using Plotly JSON in Markdown."
+  - title: "Markdown Syntax"
+    url: /guide/markdown/
+    description: "Full reference for headers, tables, lists, code blocks, and other Markdown features."

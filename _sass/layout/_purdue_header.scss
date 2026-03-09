@@ -1,0 +1,140 @@
+/* ==========================================================================
+   PURDUE 2015 TEMPLATE - HEADER STYLES
+   Reference: purdueTemplates-2015-master
+   ========================================================================== */
+
+$boiler-gold: #cfb991;
+$aged-gold: #8e6f3e;
+$steam-gray: #c4bfc0;
+$steel-gray: #555960;
+
+.purdue-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  font-family: $global-font-family;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+
+  &__signature {
+    background-color: #000;
+    padding: 1.25rem 0;
+
+    &--inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    &--logo {
+      flex: 0 0 auto;
+      display: block;
+
+      img {
+        height: 45px;
+        width: auto;
+        display: block;
+      }
+    }
+
+    &--siteName {
+      flex: 1 1 auto;
+
+      a {
+        color: #fff;
+        font-size: 1.45rem;
+        font-weight: 700;
+        text-decoration: none;
+        letter-spacing: 0.5px;
+
+        &:hover {
+          color: $boiler-gold;
+        }
+      }
+    }
+  }
+
+  &__mainNav {
+    background-color: #e8e8e8;
+    border-top: 1px solid $steam-gray;
+
+    &--inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    &--moButton {
+      display: none;
+    }
+
+    &--links {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: space-evenly;
+      align-items: center;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      text-transform: uppercase;
+      font-size: 0.875rem;
+      font-weight: 700;
+      width: 100%;
+      color: #333;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    &--item {
+      flex: 0 0 auto;
+      white-space: nowrap;
+
+      &.selected a {
+        border-bottom: 2px solid $aged-gold;
+        font-weight: 700;
+      }
+
+      a {
+        display: block;
+        padding: 0.75rem 0.5rem;
+        color: #333;
+        text-decoration: none;
+        font-weight: 700;
+
+        &:hover {
+          color: $boiler-gold;
+        }
+      }
+
+      &--theme a {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+/* Body padding for fixed Purdue header (signature + main nav) */
+body {
+  padding-top: 140px !important;
+}
+
+@media (max-width: 767px) {
+  body {
+    padding-top: 160px !important;
+  }
+}
+
+/* Sidebar: ensure it's visible below the Purdue header */
+.sidebar {
+  @media screen and (min-width: 1024px) {
+    padding-top: 140px !important;
+  }
+}
