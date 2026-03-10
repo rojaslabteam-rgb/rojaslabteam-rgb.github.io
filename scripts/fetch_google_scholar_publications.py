@@ -187,6 +187,7 @@ def main() -> int:
     try:
         orcid_id = get_orcid_id()
         works = fetch_orcid_works(orcid_id)
+        print(f"Fetched {len(works)} ORCID work summaries for {orcid_id}.")
 
         publications: list[Publication] = []
         for work_summary in works:
@@ -197,7 +198,10 @@ def main() -> int:
         publications.sort(key=lambda item: (item.year, item.title.lower()))
 
         if not publications:
-            raise RuntimeError("No publications were found from Google Scholar.")
+            print(
+                f"No ORCID publications found for year >= {MIN_PUBLICATION_YEAR}; nothing to update."
+            )
+            return 0
 
         written = write_publications(publications, OUTPUT_DIR)
         print(f"Generated {written} publication files in {OUTPUT_DIR}")
