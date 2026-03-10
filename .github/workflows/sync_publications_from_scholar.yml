@@ -3,7 +3,8 @@ name: Sync Publications From Google Scholar
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * 1"
+    # Every Monday morning (13:00 UTC ~= 8am EST / 9am EDT)
+    - cron: "0 13 * * 1"
 
 jobs:
   sync-publications:
