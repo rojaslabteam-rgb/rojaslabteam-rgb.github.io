@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Fetch ORCID publications and generate markdown files for Academic Pages."""
+"""Fetch OpenAlex publications and generate markdown files for Academic Pages."""
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from dataclasses import dataclass
@@ -16,7 +15,6 @@ AUTHOR_NAME = "HINAYAH Rojas de Oliveira"
 OUTPUT_DIR = Path("_publications")
 GENERATED_NAME_MARKER = "-gs-"
 MIN_PUBLICATION_YEAR = 2024
-ORCID_API_BASE = "https://pub.orcid.org/v3.0"
 OPENALEX_API_BASE = "https://api.openalex.org"
 REQUEST_TIMEOUT_SECONDS = 30
 
@@ -28,15 +26,6 @@ class Publication:
     venue: str
     citation: str
     paper_url: str
-
-
-def get_orcid_id() -> str:
-    orcid_id = os.getenv("ORCID_ID", "").strip()
-    if not orcid_id:
-        return ""
-    if not re.match(r"^\d{4}-\d{4}-\d{4}-[\dX]{4}$", orcid_id):
-        raise RuntimeError("ORCID_ID format is invalid. Expected 0000-0000-0000-0000.")
-    return orcid_id
 
 
 def normalize_name(text: str) -> str:
@@ -64,70 +53,6 @@ def build_citation(author_name: str, year: int, title: str, venue: str) -> str:
 
 def yaml_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("'", "&apos;")
-
-
-def extract_best_url(external_ids: list[dict]) -> str:
-    doi_value = ""
-    for ext in external_ids:
-        ext_type = str(ext.get("external-id-type", "")).lower()
-        value = str(ext.get("external-id-value", "")).strip()
-        if ext_type == "doi" and value:
-            doi_value = value
-            break
-    if doi_value:
-        return f"https://doi.org/{doi_value}"
-    return ""
-
-
-def publication_from_work_summary(summary: dict, author_name: str) -> Publication | None:
-    title_obj = (((summary.get("title") or {}).get("title") or {}).get("value"))
-    title = str(title_obj or "").strip()
-
-    pub_date = summary.get("publication-date") or {}
-    year_obj = (pub_date.get("year") or {}).get("value")
-    year_str = str(year_obj or "").strip()
-
-    if not title or not year_str.isdigit():
-        return None
-
-    year = int(year_str)
-    venue = build_venue(
-        {
-            "journal_title": ((summary.get("journal-title") or {}).get("value") or ""),
-            "type": summary.get("type", ""),
-        }
-    )
-
-    external_ids = ((summary.get("external-ids") or {}).get("external-id") or [])
-    paper_url = extract_best_url(external_ids)
-    citation = build_citation(author_name, year, title, venue)
-
-    return Publication(
-        year=year,
-        title=title,
-        venue=venue,
-        citation=citation,
-        paper_url=paper_url,
-    )
-
-
-def fetch_orcid_works(orcid_id: str) -> list[dict]:
-    headers = {"Accept": "application/json"}
-    response = requests.get(
-        f"{ORCID_API_BASE}/{orcid_id}/works",
-        headers=headers,
-        timeout=REQUEST_TIMEOUT_SECONDS,
-    )
-    response.raise_for_status()
-    data = response.json()
-
-    summaries: list[dict] = []
-    for group in data.get("group", []):
-        work_summaries = group.get("work-summary", [])
-        for summary in work_summaries:
-            summaries.append(summary)
-
-    return summaries
 
 
 def pick_openalex_author_id(author_name: str) -> str:
@@ -239,7 +164,7 @@ def markdown_for_publication(pub: Publication, slug: str) -> str:
             f"citation: '{yaml_escape(pub.citation)}'",
             "---",
             "",
-            "<!-- generated: google-scholar-sync -->",
+            "<!-- generated: openalex-sync -->",
             "",
         ]
     )
@@ -276,30 +201,14 @@ def write_publications(publications: Iterable[Publication], output_dir: Path) ->
 
 def main() -> int:
     try:
-        orcid_id = get_orcid_id()
-        publications: list[Publication] = []
-
-        if orcid_id:
-            works = fetch_orcid_works(orcid_id)
-            print(f"Fetched {len(works)} ORCID work summaries for {orcid_id}.")
-
-            for work_summary in works:
-                pub = publication_from_work_summary(work_summary, AUTHOR_NAME)
-                if pub and pub.year >= MIN_PUBLICATION_YEAR:
-                    publications.append(pub)
-        else:
-            print("ORCID_ID not set; skipping ORCID source.")
-
-        if not publications:
-            print("Falling back to OpenAlex by author name.")
-            publications = fetch_openalex_publications(AUTHOR_NAME)
-            print(f"Fetched {len(publications)} publications from OpenAlex.")
+        publications = fetch_openalex_publications(AUTHOR_NAME)
+        print(f"Fetched {len(publications)} publications from OpenAlex.")
 
         publications.sort(key=lambda item: (item.year, item.title.lower()))
 
         if not publications:
             print(
-                f"No ORCID publications found for year >= {MIN_PUBLICATION_YEAR}; nothing to update."
+                f"No OpenAlex publications found for year >= {MIN_PUBLICATION_YEAR}; nothing to update."
             )
             return 0
 
