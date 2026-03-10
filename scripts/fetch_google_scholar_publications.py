@@ -17,6 +17,7 @@ OUTPUT_DIR = Path("_publications")
 GENERATED_NAME_MARKER = "-gs-"
 MIN_PUBLICATION_YEAR = 2024
 ORCID_API_BASE = "https://pub.orcid.org/v3.0"
+OPENALEX_API_BASE = "https://api.openalex.org"
 REQUEST_TIMEOUT_SECONDS = 30
 
 
@@ -32,9 +33,7 @@ class Publication:
 def get_orcid_id() -> str:
     orcid_id = os.getenv("ORCID_ID", "").strip()
     if not orcid_id:
-        raise RuntimeError(
-            "ORCID_ID is not set. Add ORCID_ID as a repository variable or secret."
-        )
+        return ""
     if not re.match(r"^\d{4}-\d{4}-\d{4}-[\dX]{4}$", orcid_id):
         raise RuntimeError("ORCID_ID format is invalid. Expected 0000-0000-0000-0000.")
     return orcid_id
@@ -127,6 +126,94 @@ def fetch_orcid_works(orcid_id: str) -> list[dict]:
     return summaries
 
 
+def pick_openalex_author_id(author_name: str) -> str:
+    response = requests.get(
+        f"{OPENALEX_API_BASE}/authors",
+        params={"search": author_name, "per-page": 10},
+        timeout=REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    results = response.json().get("results", [])
+    if not results:
+        return ""
+
+    target = normalize_name(author_name)
+    best_id = ""
+    best_score = -1
+
+    for item in results:
+        display = normalize_name(str(item.get("display_name", "")))
+        if not display:
+            continue
+
+        score = 0
+        if display == target:
+            score += 100
+        if target in display or display in target:
+            score += 50
+
+        if "rojas" in display:
+            score += 10
+
+        works_count = int(item.get("works_count", 0) or 0)
+        score += min(works_count, 40)
+
+        if score > best_score:
+            best_score = score
+            best_id = str(item.get("id", ""))
+
+    return best_id
+
+
+def publication_from_openalex_work(work: dict, author_name: str) -> Publication | None:
+    title = str(work.get("title", "")).strip()
+    year = work.get("publication_year")
+    if not title or not isinstance(year, int):
+        return None
+
+    source = ((work.get("primary_location") or {}).get("source") or {})
+    venue = str(source.get("display_name", "")).strip() or "Unknown venue"
+
+    doi = str((work.get("ids") or {}).get("doi", "")).strip()
+    if doi and doi.startswith("https://"):
+        paper_url = doi
+    elif doi and doi.startswith("doi:"):
+        paper_url = f"https://doi.org/{doi.split(':', 1)[1]}"
+    elif doi:
+        paper_url = f"https://doi.org/{doi}"
+    else:
+        paper_url = str((work.get("primary_location") or {}).get("landing_page_url", "")).strip()
+
+    citation = build_citation(author_name, year, title, venue)
+    return Publication(year=year, title=title, venue=venue, citation=citation, paper_url=paper_url)
+
+
+def fetch_openalex_publications(author_name: str) -> list[Publication]:
+    author_id = pick_openalex_author_id(author_name)
+    if not author_id:
+        return []
+
+    response = requests.get(
+        f"{OPENALEX_API_BASE}/works",
+        params={
+            "filter": f"author.id:{author_id},from_publication_date:{MIN_PUBLICATION_YEAR}-01-01",
+            "sort": "publication_date:asc",
+            "per-page": 200,
+        },
+        timeout=REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    results = response.json().get("results", [])
+
+    publications: list[Publication] = []
+    for item in results:
+        pub = publication_from_openalex_work(item, author_name)
+        if pub and pub.year >= MIN_PUBLICATION_YEAR:
+            publications.append(pub)
+
+    return publications
+
+
 def markdown_for_publication(pub: Publication, slug: str) -> str:
     filename_stub = f"{pub.year:04d}-01-01-{slug}"
 
@@ -186,14 +273,23 @@ def write_publications(publications: Iterable[Publication], output_dir: Path) ->
 def main() -> int:
     try:
         orcid_id = get_orcid_id()
-        works = fetch_orcid_works(orcid_id)
-        print(f"Fetched {len(works)} ORCID work summaries for {orcid_id}.")
-
         publications: list[Publication] = []
-        for work_summary in works:
-            pub = publication_from_work_summary(work_summary, AUTHOR_NAME)
-            if pub and pub.year >= MIN_PUBLICATION_YEAR:
-                publications.append(pub)
+
+        if orcid_id:
+            works = fetch_orcid_works(orcid_id)
+            print(f"Fetched {len(works)} ORCID work summaries for {orcid_id}.")
+
+            for work_summary in works:
+                pub = publication_from_work_summary(work_summary, AUTHOR_NAME)
+                if pub and pub.year >= MIN_PUBLICATION_YEAR:
+                    publications.append(pub)
+        else:
+            print("ORCID_ID not set; skipping ORCID source.")
+
+        if not publications:
+            print("Falling back to OpenAlex by author name.")
+            publications = fetch_openalex_publications(AUTHOR_NAME)
+            print(f"Fetched {len(publications)} publications from OpenAlex.")
 
         publications.sort(key=lambda item: (item.year, item.title.lower()))
 
