@@ -21,6 +21,7 @@ REQUEST_TIMEOUT_SECONDS = 30
 
 @dataclass
 class Publication:
+    pub_date: str
     year: int
     title: str
     venue: str
@@ -100,6 +101,10 @@ def publication_from_openalex_work(work: dict, author_name: str) -> Publication 
     if not title or not isinstance(year, int):
         return None
 
+    publication_date = str(work.get("publication_date", "")).strip()
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", publication_date):
+        publication_date = f"{year:04d}-01-01"
+
     source = ((work.get("primary_location") or {}).get("source") or {})
     venue = str(source.get("display_name", "")).strip() or "Unknown venue"
 
@@ -114,7 +119,14 @@ def publication_from_openalex_work(work: dict, author_name: str) -> Publication 
         paper_url = str((work.get("primary_location") or {}).get("landing_page_url", "")).strip()
 
     citation = build_citation(author_name, year, title, venue)
-    return Publication(year=year, title=title, venue=venue, citation=citation, paper_url=paper_url)
+    return Publication(
+        pub_date=publication_date,
+        year=year,
+        title=title,
+        venue=venue,
+        citation=citation,
+        paper_url=paper_url,
+    )
 
 
 def fetch_openalex_publications(author_name: str) -> list[Publication]:
@@ -126,7 +138,7 @@ def fetch_openalex_publications(author_name: str) -> list[Publication]:
         f"{OPENALEX_API_BASE}/works",
         params={
             "filter": f"author.id:{author_id},from_publication_date:{MIN_PUBLICATION_YEAR}-01-01",
-            "sort": "publication_date:asc",
+            "sort": "publication_date:desc",
             "per-page": 200,
         },
         timeout=REQUEST_TIMEOUT_SECONDS,
@@ -144,7 +156,7 @@ def fetch_openalex_publications(author_name: str) -> list[Publication]:
 
 
 def markdown_for_publication(pub: Publication, slug: str) -> str:
-    filename_stub = f"{pub.year:04d}-01-01-{slug}"
+    filename_stub = f"{pub.pub_date}-{slug}"
 
     lines = [
         "---",
@@ -152,7 +164,7 @@ def markdown_for_publication(pub: Publication, slug: str) -> str:
         "collection: publications",
         "category: manuscripts",
         f"permalink: /publication/{filename_stub}",
-        f"date: {pub.year:04d}-01-01",
+        f"date: {pub.pub_date}",
         f"venue: '{yaml_escape(pub.venue)}'",
     ]
 
@@ -191,7 +203,7 @@ def write_publications(publications: Iterable[Publication], output_dir: Path) ->
     count = 0
     for pub in publications:
         slug = f"gs-{safe_slug(pub.title)}"
-        file_name = f"{pub.year:04d}-01-01-{slug}.md"
+        file_name = f"{pub.pub_date}-{slug}.md"
         file_path = output_dir / file_name
         file_path.write_text(markdown_for_publication(pub, slug), encoding="utf-8")
         count += 1
@@ -204,7 +216,7 @@ def main() -> int:
         publications = fetch_openalex_publications(AUTHOR_NAME)
         print(f"Fetched {len(publications)} publications from OpenAlex.")
 
-        publications.sort(key=lambda item: (item.year, item.title.lower()))
+        publications.sort(key=lambda item: (item.pub_date, item.title.lower()), reverse=True)
 
         if not publications:
             print(
