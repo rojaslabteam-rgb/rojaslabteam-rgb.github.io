@@ -39,6 +39,10 @@ def get_orcid_id() -> str:
     return orcid_id
 
 
+def normalize_name(text: str) -> str:
+    return " ".join(re.findall(r"[a-z0-9]+", text.lower()))
+
+
 def safe_slug(text: str) -> str:
     cleaned = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return cleaned[:80] or "untitled"
