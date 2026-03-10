@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
-"""Fetch Google Scholar publications for a target author and generate markdown files.
-
-This script searches Google Scholar by author name, fetches publications, and writes
-Academic Pages publication markdown files into _publications.
-"""
+"""Fetch ORCID publications and generate markdown files for Academic Pages."""
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from scholarly import scholarly
+import requests
 
-AUTHOR_NAME = "HINAYAH ROJAS DE OLIVEIRA"
+AUTHOR_NAME = "HINAYAH Rojas de Oliveira"
 OUTPUT_DIR = Path("_publications")
 GENERATED_NAME_MARKER = "-gs-"
 MIN_PUBLICATION_YEAR = 2024
+ORCID_API_BASE = "https://pub.orcid.org/v3.0"
+REQUEST_TIMEOUT_SECONDS = 30
 
 
 @dataclass
@@ -30,26 +29,15 @@ class Publication:
     paper_url: str
 
 
-def normalize_name(text: str) -> str:
-    return " ".join(re.findall(r"[a-z0-9]+", text.lower()))
-
-
-def pick_author(author_name: str) -> dict:
-    target = normalize_name(author_name)
-    matches = scholarly.search_author(author_name)
-
-    best = None
-    for candidate in matches:
-        candidate_name = normalize_name(candidate.get("name", ""))
-        if candidate_name == target:
-            return candidate
-        if target in candidate_name or candidate_name in target:
-            best = best or candidate
-
-    if best:
-        return best
-
-    raise RuntimeError(f"No Google Scholar author found for: {author_name}")
+def get_orcid_id() -> str:
+    orcid_id = os.getenv("ORCID_ID", "").strip()
+    if not orcid_id:
+        raise RuntimeError(
+            "ORCID_ID is not set. Add ORCID_ID as a repository variable or secret."
+        )
+    if not re.match(r"^\d{4}-\d{4}-\d{4}-[\dX]{4}$", orcid_id):
+        raise RuntimeError("ORCID_ID format is invalid. Expected 0000-0000-0000-0000.")
+    return orcid_id
 
 
 def safe_slug(text: str) -> str:
@@ -58,10 +46,12 @@ def safe_slug(text: str) -> str:
 
 
 def build_venue(bib: dict) -> str:
-    for key in ("journal", "conference", "booktitle", "publisher"):
-        value = str(bib.get(key, "")).strip()
-        if value:
-            return value
+    value = str(bib.get("journal_title", "")).strip()
+    if value:
+        return value
+    value = str(bib.get("type", "")).strip()
+    if value:
+        return value.replace("-", " ").title()
     return "Unknown venue"
 
 
@@ -73,17 +63,40 @@ def yaml_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("'", "&apos;")
 
 
-def publication_from_entry(entry: dict, author_name: str) -> Publication | None:
-    bib = entry.get("bib", {})
-    title = str(bib.get("title", "")).strip()
-    year_str = str(bib.get("pub_year", "")).strip()
+def extract_best_url(external_ids: list[dict]) -> str:
+    doi_value = ""
+    for ext in external_ids:
+        ext_type = str(ext.get("external-id-type", "")).lower()
+        value = str(ext.get("external-id-value", "")).strip()
+        if ext_type == "doi" and value:
+            doi_value = value
+            break
+    if doi_value:
+        return f"https://doi.org/{doi_value}"
+    return ""
+
+
+def publication_from_work_summary(summary: dict, author_name: str) -> Publication | None:
+    title_obj = (((summary.get("title") or {}).get("title") or {}).get("value"))
+    title = str(title_obj or "").strip()
+
+    pub_date = summary.get("publication-date") or {}
+    year_obj = (pub_date.get("year") or {}).get("value")
+    year_str = str(year_obj or "").strip()
 
     if not title or not year_str.isdigit():
         return None
 
     year = int(year_str)
-    venue = build_venue(bib)
-    paper_url = str(entry.get("pub_url", "")).strip()
+    venue = build_venue(
+        {
+            "journal_title": ((summary.get("journal-title") or {}).get("value") or ""),
+            "type": summary.get("type", ""),
+        }
+    )
+
+    external_ids = ((summary.get("external-ids") or {}).get("external-id") or [])
+    paper_url = extract_best_url(external_ids)
     citation = build_citation(author_name, year, title, venue)
 
     return Publication(
@@ -93,6 +106,25 @@ def publication_from_entry(entry: dict, author_name: str) -> Publication | None:
         citation=citation,
         paper_url=paper_url,
     )
+
+
+def fetch_orcid_works(orcid_id: str) -> list[dict]:
+    headers = {"Accept": "application/json"}
+    response = requests.get(
+        f"{ORCID_API_BASE}/{orcid_id}/works",
+        headers=headers,
+        timeout=REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    summaries: list[dict] = []
+    for group in data.get("group", []):
+        work_summaries = group.get("work-summary", [])
+        for summary in work_summaries:
+            summaries.append(summary)
+
+    return summaries
 
 
 def markdown_for_publication(pub: Publication, slug: str) -> str:
@@ -153,17 +185,12 @@ def write_publications(publications: Iterable[Publication], output_dir: Path) ->
 
 def main() -> int:
     try:
-        author = pick_author(AUTHOR_NAME)
-        filled_author = scholarly.fill(author, sections=["publications"], sortby="year")
+        orcid_id = get_orcid_id()
+        works = fetch_orcid_works(orcid_id)
 
         publications: list[Publication] = []
-        for raw_pub in filled_author.get("publications", []):
-            try:
-                detailed = scholarly.fill(raw_pub)
-            except Exception:
-                detailed = raw_pub
-
-            pub = publication_from_entry(detailed, AUTHOR_NAME)
+        for work_summary in works:
+            pub = publication_from_work_summary(work_summary, AUTHOR_NAME)
             if pub and pub.year >= MIN_PUBLICATION_YEAR:
                 publications.append(pub)
 
