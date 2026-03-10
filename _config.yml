@@ -24,25 +24,25 @@ repository               : "rojaslabteam-rgb/rojaslabteam-rgb.github.io"
 author:
   # Biographic information
   avatar           : "profile.png"
-  name             : "Rojas Lab"
+  name             : "HINAYAH ROJAS DE OLIVEIRA"
   pronouns         : # example: "she/her"  
-  bio              : "Genetic and Genomic Research at Purdue University"
-  location         : "West Lafayette, IN"
-  employer         : "Purdue University"
+  bio              : "Assistant Professor, Animal Sciences | Office: CRTN Room 3034 | Address: 270 S Russell Street, West Lafayette, IN 47907"
+  location         : "CRTN Room 3034, 270 S Russell Street, West Lafayette, IN 47907"
+  employer         : "Animal Sciences, Purdue University"
   uri              : # URL
-  email            : "none@example.org" 
+  email            : "hrojasde@purdue.edu" 
 
   # Academic websites
   academia         : # URL
   arxiv            : # URL - Update with the correct link to your profile
-  googlescholar    : "https://scholar.google.com/citations?user=PS_CX0AAAAAJ"
+  googlescholar    : # URL
   inspire-hep      : # URL
   impactstory      : # URL
-  orcid            : "https://orcid.org/yourorcidurl"
+  orcid            : # URL
   semantic         : # URL
   ssrn             : # URL
-  pubmed           : "https://www.ncbi.nlm.nih.gov/pubmed/?term=john+snow"
-  researchgate     : # URL
+  pubmed           : # URL
+  researchgate     : "https://www.researchgate.net/profile/Hinayah-Oliveira/research"
   scopus           : # URL
   zotero           : # URL
 
@@ -57,7 +57,7 @@ author:
 
   # Social media
   artstation       : # Username
-  bluesky          : "bsky.app" # Replace this with you Bluesky username
+  bluesky          : # Username
   facebook         : # Username
   flickr           : # Username
   foursquare       : # Username
