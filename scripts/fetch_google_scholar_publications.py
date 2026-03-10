@@ -18,6 +18,7 @@ from scholarly import scholarly
 AUTHOR_NAME = "HINAYAH ROJAS DE OLIVEIRA"
 OUTPUT_DIR = Path("_publications")
 GENERATED_NAME_MARKER = "-gs-"
+MIN_PUBLICATION_YEAR = 2024
 
 
 @dataclass
@@ -163,7 +164,7 @@ def main() -> int:
                 detailed = raw_pub
 
             pub = publication_from_entry(detailed, AUTHOR_NAME)
-            if pub:
+            if pub and pub.year >= MIN_PUBLICATION_YEAR:
                 publications.append(pub)
 
         publications.sort(key=lambda item: (item.year, item.title.lower()))
