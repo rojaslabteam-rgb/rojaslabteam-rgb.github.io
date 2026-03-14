@@ -88,7 +88,7 @@ if (plotlyElements.length > 0) {
 $(document).ready(function () {
   // SCSS SETTINGS - These should be the same as the settings in the relevant files 
   const scssLarge = 925;          // pixels, from /_sass/_themes.scss
-  const scssMastheadHeight = 140; // pixels, Purdue header (signature + main nav)
+  const scssMastheadHeight = 186; // pixels, Purdue header (gold bar + signature + main nav)
 
   // If the user hasn't chosen a theme, follow the OS preference
   setTheme();
@@ -101,6 +101,97 @@ $(document).ready(function () {
 
   // Enable the theme toggle
   $('#theme-toggle').on('click', toggleTheme);
+
+  // Purdue header interactions
+  const mobileBreakpoint = 992;
+  const $purdueHeader = $('.purdue-header');
+  const $quickLinksToggle = $('#purdue-quicklinks-toggle');
+  const $quickLinksPanel = $('#purdue-quicklinks-panel');
+  const $findInfoToggle = $('#purdue-findinfo-toggle');
+  const $findInfoPanel = $('.purdue-header__goldBar__findInfoFor');
+  const $searchToggle = $('#purdue-search-toggle');
+  const $searchPanel = $('#purdue-search-dropdown');
+  const $mainNavToggle = $('#purdue-mainnav-toggle');
+  const $mainNavPanel = $('#purdue-mainnav-panel');
+
+  const setExpanded = ($element, expanded) => {
+    if ($element && $element.length) {
+      $element.attr('aria-expanded', expanded ? 'true' : 'false');
+    }
+  };
+
+  const closeUtilityMenus = () => {
+    $findInfoPanel.removeClass('is-open');
+    setExpanded($findInfoToggle, false);
+    $searchPanel.removeClass('is-open');
+    setExpanded($searchToggle, false);
+  };
+
+  if ($quickLinksToggle.length && $quickLinksPanel.length) {
+    $quickLinksToggle.on('click', function (event) {
+      event.preventDefault();
+      const willOpen = !$quickLinksPanel.hasClass('is-open');
+      $quickLinksPanel.toggleClass('is-open', willOpen);
+      setExpanded($quickLinksToggle, willOpen);
+    });
+  }
+
+  if ($findInfoToggle.length && $findInfoPanel.length) {
+    $findInfoToggle.on('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const willOpen = !$findInfoPanel.hasClass('is-open');
+      $findInfoPanel.toggleClass('is-open', willOpen);
+      setExpanded($findInfoToggle, willOpen);
+    });
+  }
+
+  if ($searchToggle.length && $searchPanel.length) {
+    $searchToggle.on('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const willOpen = !$searchPanel.hasClass('is-open');
+      $searchPanel.toggleClass('is-open', willOpen);
+      setExpanded($searchToggle, willOpen);
+      if (willOpen) {
+        $('#purdue-search-input').trigger('focus');
+      }
+    });
+  }
+
+  if ($mainNavToggle.length && $mainNavPanel.length) {
+    $mainNavToggle.on('click', function (event) {
+      event.preventDefault();
+      const willOpen = !$mainNavPanel.hasClass('is-open');
+      $mainNavPanel.toggleClass('is-open', willOpen);
+      setExpanded($mainNavToggle, willOpen);
+    });
+  }
+
+  $(document).on('click', function (event) {
+    if (!$purdueHeader.length || $(event.target).closest('.purdue-header').length) {
+      return;
+    }
+
+    closeUtilityMenus();
+
+    if ($(window).width() <= mobileBreakpoint) {
+      $quickLinksPanel.removeClass('is-open');
+      setExpanded($quickLinksToggle, false);
+      $mainNavPanel.removeClass('is-open');
+      setExpanded($mainNavToggle, false);
+    }
+  });
+
+  $(window).on('resize', function () {
+    if ($(window).width() > mobileBreakpoint) {
+      $quickLinksPanel.removeClass('is-open');
+      setExpanded($quickLinksToggle, false);
+      $mainNavPanel.removeClass('is-open');
+      setExpanded($mainNavToggle, false);
+    }
+    closeUtilityMenus();
+  });
 
   // Enable the sticky footer
   var bumpIt = function () {
