@@ -2,8 +2,8 @@
 title: "Phenotypic and genetic analysis of somatic cell score response to heat stress in first lactation Holstein cattle"
 collection: publications
 category: manuscripts
-permalink: /publication/2026-01-01-gs-phenotypic-and-genetic-analysis-of-somatic-cell-score-response-to-heat-stress-in
-date: 2026-01-01
+permalink: /publication/2026-01-08-gs-phenotypic-and-genetic-analysis-of-somatic-cell-score-response-to-heat-stress-in
+date: 2026-01-08
 venue: 'Journal of Animal Science'
 paperurl: 'https://doi.org/10.1093/jas/skag252'
 citation: 'Hinayah Rojas De Oliveira (2026). Phenotypic and genetic analysis of somatic cell score response to heat stress in first lactation Holstein cattle. Journal of Animal Science.'
